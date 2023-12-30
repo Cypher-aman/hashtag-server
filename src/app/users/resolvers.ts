@@ -1,6 +1,10 @@
 import { db } from '../../clients/db';
-import { generateUniqueUserName, generateJWTUserToken } from '../../services';
+import {
+  generateUniqueUserName,
+  generateJWTUserToken,
+} from '../../services/helper';
 import axios from 'axios';
+import { GraphQlContext } from '../../services/interface';
 
 const query = {
   verifyGoogleToken: async (parent: any, { token }: { token: string }) => {
@@ -37,6 +41,18 @@ const query = {
       console.log(error);
       return error.message;
     }
+  },
+
+  getUserInfo: async (parent: any, args: any, context: GraphQlContext) => {
+    const userID = context.userSignature?.id;
+
+    if (!userID) {
+      return null;
+    }
+
+    const user = await db.user.findUnique({ where: { id: userID } });
+
+    return user;
   },
 };
 
