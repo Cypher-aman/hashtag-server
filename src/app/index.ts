@@ -4,9 +4,8 @@ import cors from 'cors';
 import express from 'express';
 import { User } from './users';
 import { Post } from './posts';
-import { GraphQlContext } from '../services/interface';
-import { verifyJWTUserToken } from '../services/helper';
-import { dateScalar } from './posts/scalars';
+import { GraphQlContext } from '../utils/interface';
+import { verifyJWTUserToken } from '../utils/helper';
 
 const initServer = async () => {
   const app = express();
@@ -26,6 +25,7 @@ const initServer = async () => {
 
         type Mutation {
             ${Post.mutations}
+            ${User.mutations}
         }
     `,
     resolvers: {
@@ -35,9 +35,11 @@ const initServer = async () => {
       },
       Mutation: {
         ...Post.resolvers.mutation,
+        ...User.resolvers.mutations,
       },
       ...Post.resolvers.extraResolvers,
       ...Post.resolvers.extraTypes,
+      ...User.resolvers.extraResolvers,
     },
   });
   // Note you must call `start()` on the `ApolloServer`

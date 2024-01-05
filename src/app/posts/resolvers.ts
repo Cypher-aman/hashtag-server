@@ -1,23 +1,33 @@
 import { Post } from '@prisma/client';
-import { db } from '../../clients/db';
-import { GraphQlContext } from '../../services/interface';
+import { GraphQlContext } from '../../utils/interface';
 import { dateScalar } from './scalars';
+import PostService from '../../services/post';
+import UserService from '../../services/user';
+
+const extraTypes = {
+  Date: dateScalar,
+};
 
 interface CreatePostInput {
   content: string;
   imageUrl?: string;
 }
 
-const extraTypes = {
-  Date: dateScalar,
-};
 const query = {
   getAllPosts: async () => {
-    return await db.post.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    return await PostService.getAllPosts();
+  },
+
+  getUserPosts: async (parent: any, { userName }: { userName: string }) => {
+    return await PostService.getUserPosts(userName);
+  },
+
+  getPresignerURL: async (
+    parent: any,
+    { imageType, imageName }: { imageType: string; imageName: string },
+    ctx: GraphQlContext
+  ) => {
+    return await PostService.getPresignerURL(imageType, imageName, ctx);
   },
 };
 
@@ -27,35 +37,14 @@ const mutation = {
     { payload }: { payload: CreatePostInput },
     ctx: GraphQlContext
   ) => {
-    const authorId = ctx.userSignature?.id;
-
-    if (!authorId) {
-      return 'Unauthorized';
-    }
-
-    const post = await db.post.create({
-      data: {
-        content: payload.content,
-        imageUrl: payload.imageUrl,
-        author: {
-          connect: {
-            id: authorId,
-          },
-        },
-      },
-    });
-    return post;
+    return await PostService.createPost(payload, ctx);
   },
 };
 
 const extraResolvers = {
   Post: {
     author: async (parent: Post) => {
-      return await db.user.findUnique({
-        where: {
-          id: parent.authorId,
-        },
-      });
+      return await UserService.getUserById(parent.authorId);
     },
   },
 };

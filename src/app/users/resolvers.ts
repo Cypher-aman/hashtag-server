@@ -1,59 +1,63 @@
-import { db } from '../../clients/db';
-import {
-  generateUniqueUserName,
-  generateJWTUserToken,
-} from '../../services/helper';
-import axios from 'axios';
-import { GraphQlContext } from '../../services/interface';
+import { GraphQlContext } from '../../utils/interface';
+import UserService from '../../services/user';
+import { User } from '@prisma/client';
 
 const query = {
   verifyGoogleToken: async (parent: any, { token }: { token: string }) => {
-    const googleOAuthAPI = new URL('https://oauth2.googleapis.com/tokeninfo');
-    googleOAuthAPI.searchParams.set('id_token', token);
-
-    try {
-      const { data } = await axios.get<any>(googleOAuthAPI.toString(), {
-        responseType: 'json',
-      });
-
-      let user = await db.user.findUnique({
-        where: {
-          email: data.email,
-        },
-      });
-
-      if (!user) {
-        user = await db.user.create({
-          data: {
-            firstName: data.given_name,
-            lastName: data.family_name,
-            userName: generateUniqueUserName(),
-            email: data.email,
-            profilePicUrl: data.picture,
-          },
-        });
-      }
-
-      const token = generateJWTUserToken(user);
-
-      return token;
-    } catch (error: any) {
-      console.log(error);
-      return error.message;
-    }
+    return await UserService.verifyGoogleToken(token);
   },
 
-  getUserInfo: async (parent: any, args: any, context: GraphQlContext) => {
-    const userID = context.userSignature?.id;
+  getUserInfo: async (parent: any, args: any, ctx: GraphQlContext) => {
+    const userId = ctx.userSignature?.id;
+    if (!userId) return null;
+    return await UserService.getUserById(userId);
+  },
 
-    if (!userID) {
-      return null;
-    }
-
-    const user = await db.user.findUnique({ where: { id: userID } });
-
-    return user;
+  getUserByName: async (parent: any, { userName }: { userName: string }) => {
+    return await UserService.getUserByName(userName);
   },
 };
 
-export const resolvers = { query };
+const mutations = {
+  followUser: async (
+    parent: any,
+    { to }: { to: string },
+    ctx: GraphQlContext
+  ) => {
+    const currentUser = ctx.userSignature?.id;
+
+    if (!currentUser) throw new Error('Unauthenticated');
+    if (currentUser === to) throw new Error('You can not follow your account');
+
+    await UserService.followUser(currentUser, to);
+
+    return true;
+  },
+
+  unfollowUser: async (
+    parent: any,
+    { to }: { to: string },
+    ctx: GraphQlContext
+  ) => {
+    const currentUser = ctx.userSignature?.id;
+
+    if (!currentUser) throw new Error('Unauthenticated');
+
+    await UserService.unfollowUser(currentUser, to);
+
+    return true;
+  },
+};
+
+const extraResolvers = {
+  User: {
+    follower: async (parent: User) => {
+      return await UserService.getUserFollowers(parent.id);
+    },
+    following: async (parent: User) => {
+      return await UserService.getUserFollowings(parent.id);
+    },
+  },
+};
+
+export const resolvers = { query, mutations, extraResolvers };

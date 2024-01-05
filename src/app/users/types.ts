@@ -7,6 +7,9 @@ type User {
     userName: String!
     email: String!
     profilePicUrl: String!
+
+    follower: [User]
+    following: [User]
 }
 
 `;
