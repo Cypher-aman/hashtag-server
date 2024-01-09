@@ -27,7 +27,6 @@ model User {
   likes     Like[]
   bookmarks Bookmark[]
 
-  replies Reply[]
   posts   Post[]
 }
 
@@ -49,30 +48,35 @@ model Post {
   author   User   @relation(fields: [authorId], references: [id])
   authorId String
 
+  parent   Post?  @relation("replyTree", fields: [parentId], references: [id])
+  parentId String?
+
+  replies Post[] @relation("replyTree")
+
   likes     Like[]
   bookmarks Bookmark[]
-  replies   Reply[]
+
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Reply {
-  id       String  @id @default(cuid())
-  content  String
-  imageUrl String?
+// model Reply {
+//   id       String  @id @default(cuid())
+//   content  String
+//   imageUrl String?
 
-  author   User   @relation(fields: [authorId], references: [id])
-  authorId String
+//   author   User   @relation(fields: [authorId], references: [id])
+//   authorId String
 
-  post   Post   @relation(fields: [postId], references: [id])
-  postId String
+//   post   Post   @relation(fields: [postId], references: [id])
+//   postId String
 
-  parent   Reply?  @relation("replyTree", fields: [parentId], references: [id])
-  parentId String?
+//   parent   Reply?  @relation("replyTree", fields: [parentId], references: [id])
+//   parentId String?
 
-  replies Reply[] @relation("replyTree")
-}
+//   replies Reply[] @relation("replyTree")
+// }
 
 model Like {
   postId String

@@ -2,13 +2,19 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db } from '../clients/db';
 import { GraphQlContext } from '../utils/interface';
-import { Like, Reply } from '@prisma/client';
+import { Like } from '@prisma/client';
 
 const s3CLient = new S3Client({});
 
 interface CreatePostInput {
   content: string;
   imageUrl?: string;
+}
+
+interface CreateReplyInput {
+  content: string;
+  imageUrl?: string;
+  parentId: string;
 }
 
 interface Post {
@@ -24,6 +30,9 @@ interface Post {
 class PostService {
   static async getAllPosts(userId?: string) {
     const posts = await db.post.findMany({
+      where: {
+        parent: null,
+      },
       include: {
         likes: true,
         replies: {
@@ -63,6 +72,7 @@ class PostService {
         author: {
           userName,
         },
+        parent: null,
       },
       include: {
         likes: true,
@@ -203,49 +213,25 @@ class PostService {
     }
   }
 
-  static async createReply(data: Reply, userId: string) {
-    const { content, imageUrl, postId, parentId } = data;
+  static async createReply(data: CreateReplyInput, userId: string) {
+    const { content, imageUrl, parentId } = data;
     try {
-      if (parentId) {
-        await db.reply.create({
-          data: {
-            content,
-            imageUrl,
-            author: {
-              connect: {
-                id: userId,
-              },
-            },
-            post: {
-              connect: {
-                id: postId,
-              },
-            },
-            parent: {
-              connect: {
-                id: parentId,
-              },
+      await db.post.create({
+        data: {
+          content,
+          imageUrl,
+          author: {
+            connect: {
+              id: userId,
             },
           },
-        });
-      } else {
-        await db.reply.create({
-          data: {
-            content,
-            imageUrl,
-            author: {
-              connect: {
-                id: userId,
-              },
-            },
-            post: {
-              connect: {
-                id: postId,
-              },
+          parent: {
+            connect: {
+              id: parentId,
             },
           },
-        });
-      }
+        },
+      });
     } catch (error) {
       throw new Error('Failed to create reply');
     }
@@ -258,80 +244,39 @@ class PostService {
           id: postId,
         },
         include: {
-          replies: true,
-          likes: {
-            select: {
-              userId: true,
-            },
-          },
-          bookmarks: {
-            select: {
-              userId: true,
-            },
-          },
-        },
-      });
-      if (!post) throw new Error('Post not found');
-
-      const withDirectReplies = post.replies.filter((reply) => !reply.parentId);
-      if (userId) {
-        const isLiked = post.likes.some((like) => like.userId === userId);
-        return {
-          ...post,
-          replies: withDirectReplies,
-          isLiked,
-          likeCount: post.likes.length,
-        };
-      }
-      return {
-        ...post,
-        replies: withDirectReplies,
-        likeCount: post.likes.length,
-      };
-    } catch (error) {
-      throw new Error('Failed to get replies');
-    }
-  }
-
-  static async getNestedReplies(postId: string) {
-    try {
-      const reply = await db.reply.findUnique({
-        where: {
-          id: postId,
-        },
-        include: {
           replies: {
             include: {
-              author: {
+              likes: true,
+              replies: {
                 select: {
                   id: true,
-                  userName: true,
-                  lastName: true,
-                  firstName: true,
-                  profilePicUrl: true,
                 },
               },
             },
-          },
-          author: {
-            select: {
-              id: true,
-              userName: true,
-              lastName: true,
-              firstName: true,
-              profilePicUrl: true,
+            orderBy: {
+              createdAt: 'desc',
             },
           },
+          likes: true,
         },
       });
-      if (!reply) throw new Error('Reply not found');
-      const withDirectReplies = reply?.replies.filter(
-        (reply) => reply.parentId === postId
-      );
-
+      if (!post) {
+        throw new Error('Post not found');
+      }
+      const isLiked = post.likes.some((like) => like.userId === userId);
+      const repliesWithLikeInfo = post.replies.map((reply) => {
+        const isLiked = reply.likes.some((like) => like.userId === userId);
+        return {
+          ...reply,
+          isLiked,
+          likeCount: reply.likes.length,
+        };
+      });
       return {
-        ...reply,
-        replies: withDirectReplies,
+        ...post,
+        replies: repliesWithLikeInfo,
+        likeCount: post.likes.length,
+        isLiked,
       };
     } catch (error) {
       throw new Error('Failed to get replies');

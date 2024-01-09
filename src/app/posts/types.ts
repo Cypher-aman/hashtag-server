@@ -9,7 +9,6 @@ export const types = `#graphql
         content: String!
         imageUrl: String
         parentId: String
-        postId: String
     }
 
     type Like {
@@ -20,42 +19,20 @@ export const types = `#graphql
         post: Post!
     }
 
-    type Reply {
-        id: ID!
-        content: String!
-        imageUrl: String
-
-        author: User!
-        authorId: String!
-
-        post: Post!
-        postId: String!
-
-        
-        isLiked: Boolean
-        likeCount: Int
-
-        parent: Reply
-        parentId: String
-        likes: [Like]
-        replies: [Reply]
-
-        createdAt: Date!
-        updatedAt: Date!
-    }
-
     type Post {
         id: ID!
         content: String!
         imageUrl: String
         author: User!
         authorId: String!
+        parent: Post
+        parentId: String
 
         isLiked: Boolean
         likeCount: Int
 
         likes: [Like]
-        replies: [Reply]
+        replies: [Post]
 
         createdAt: Date!
         updatedAt: Date!

@@ -1,4 +1,4 @@
-import { Post, Reply } from '@prisma/client';
+import { Post } from '@prisma/client';
 import { GraphQlContext } from '../../utils/interface';
 import { dateScalar } from './scalars';
 import PostService from '../../services/post';
@@ -11,6 +11,12 @@ const extraTypes = {
 interface CreatePostInput {
   content: string;
   imageUrl?: string;
+}
+
+interface CreateReplyInput {
+  content: string;
+  imageUrl?: string;
+  parentId: string;
 }
 
 const query = {
@@ -52,18 +58,18 @@ const query = {
     }
   },
 
-  getNestedReplies: async (
-    parent: any,
-    { parentId }: { parentId: string },
-    ctx: GraphQlContext
-  ) => {
-    const userId = ctx.userSignature?.id;
-    try {
-      return await PostService.getNestedReplies(parentId);
-    } catch (error: any) {
-      throw new Error(error.message);
-    }
-  },
+  // getNestedReplies: async (
+  //   parent: any,
+  //   { parentId }: { parentId: string },
+  //   ctx: GraphQlContext
+  // ) => {
+  //   const userId = ctx.userSignature?.id;
+  //   try {
+  //     return await PostService.getNestedReplies(parentId);
+  //   } catch (error: any) {
+  //     throw new Error(error.message);
+  //   }
+  // },
 };
 
 const mutation = {
@@ -105,7 +111,7 @@ const mutation = {
 
   createReply: async (
     parent: any,
-    { payload }: { payload: Reply },
+    { payload }: { payload: CreateReplyInput },
     ctx: GraphQlContext
   ) => {
     try {
