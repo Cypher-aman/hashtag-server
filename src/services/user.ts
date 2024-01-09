@@ -97,6 +97,26 @@ class UserService {
 
     return users.map((e) => e.following);
   }
+
+  static async getRecommendedUsers(id: string) {
+    const users = await db.user.findMany({
+      where: {
+        NOT: {
+          id,
+        },
+      },
+      include: {
+        follower: true,
+        following: true,
+      },
+    });
+
+    const notFollowing = users.filter((user) => {
+      return !user.following.some((following) => following.followerId === id);
+    });
+
+    return notFollowing.length < 4 ? notFollowing : notFollowing.slice(0, 4);
+  }
 }
 
 export default UserService;

@@ -24,11 +24,14 @@ model User {
   follower  Follows[] @relation("follower")
   following Follows[] @relation("following")
 
-  posts Post[]
+  likes     Like[]
+  bookmarks Bookmark[]
+
+  replies Reply[]
+  posts   Post[]
 }
 
 model Follows {
-
   follower   User   @relation("follower", fields: [followerId], references: [id])
   followerId String
 
@@ -46,6 +49,45 @@ model Post {
   author   User   @relation(fields: [authorId], references: [id])
   authorId String
 
+  likes     Like[]
+  bookmarks Bookmark[]
+  replies   Reply[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Reply {
+  id       String  @id @default(cuid())
+  content  String
+  imageUrl String?
+
+  author   User   @relation(fields: [authorId], references: [id])
+  authorId String
+
+  post   Post   @relation(fields: [postId], references: [id])
+  postId String
+
+  parent   Reply?  @relation("replyTree", fields: [parentId], references: [id])
+  parentId String?
+
+  replies Reply[] @relation("replyTree")
+}
+
+model Like {
+  postId String
+  userId String
+  post   Post   @relation(fields: [postId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@id([postId, userId])
+}
+
+model Bookmark {
+  postId String
+  userId String
+  post   Post   @relation(fields: [postId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@id([postId, userId])
 }

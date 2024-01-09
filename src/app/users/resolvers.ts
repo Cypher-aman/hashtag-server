@@ -16,6 +16,12 @@ const query = {
   getUserByName: async (parent: any, { userName }: { userName: string }) => {
     return await UserService.getUserByName(userName);
   },
+
+  getRecommendedUsers: async (parent: any, args: any, ctx: GraphQlContext) => {
+    const userId = ctx.userSignature?.id;
+    if (!userId) return null;
+    return await UserService.getRecommendedUsers(userId);
+  },
 };
 
 const mutations = {
