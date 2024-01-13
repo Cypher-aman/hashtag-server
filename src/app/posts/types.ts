@@ -19,6 +19,14 @@ export const types = `#graphql
         post: Post!
     }
 
+    type Bookmark {
+        id: ID!
+        userId: String!
+        postId: String!
+        user: User!
+        post: Post!
+    }
+
     type Post {
         id: ID!
         content: String!
@@ -30,9 +38,12 @@ export const types = `#graphql
 
         isLiked: Boolean
         likeCount: Int
+        isBookmarked: Boolean
+        bookmarkCount: Int
 
         likes: [Like]
         replies: [Post]
+        bookmarks: [Bookmark]
 
         createdAt: Date!
         updatedAt: Date!

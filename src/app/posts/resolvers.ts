@@ -58,18 +58,13 @@ const query = {
     }
   },
 
-  // getNestedReplies: async (
-  //   parent: any,
-  //   { parentId }: { parentId: string },
-  //   ctx: GraphQlContext
-  // ) => {
-  //   const userId = ctx.userSignature?.id;
-  //   try {
-  //     return await PostService.getNestedReplies(parentId);
-  //   } catch (error: any) {
-  //     throw new Error(error.message);
-  //   }
-  // },
+  getPosts: async (parent: any, { query }: { query: string }) => {
+    try {
+      return await PostService.searchPosts(query);
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  },
 };
 
 const mutation = {
@@ -121,6 +116,34 @@ const mutation = {
       return 'Reply created';
     } catch (error: any) {
       throw new Error(error.message);
+    }
+  },
+
+  bookmarkPost: async (
+    parent: any,
+    { postId }: { postId: string },
+    ctx: GraphQlContext
+  ) => {
+    try {
+      const userId = ctx.userSignature?.id;
+      if (!userId) throw new Error('Unauthorized');
+      return await PostService.bookmarkPost(postId, userId);
+    } catch (error: any) {
+      return error.message;
+    }
+  },
+
+  unBookmarkPost: async (
+    parent: any,
+    { postId }: { postId: string },
+    ctx: GraphQlContext
+  ) => {
+    try {
+      const userId = ctx.userSignature?.id;
+      if (!userId) throw new Error('Unauthorized');
+      return await PostService.unBookmarkPost(postId, userId);
+    } catch (error: any) {
+      return error.message;
     }
   },
 };

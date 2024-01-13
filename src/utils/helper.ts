@@ -20,3 +20,7 @@ export const verifyJWTUserToken = (token: string) => {
   const decoded = Jwt.verify(token, secretKey);
   return decoded;
 };
+
+export const generateRandomOTP = (max: number, min: number) => {
+  return Math.floor(Math.random() * (max - min) + min);
+};

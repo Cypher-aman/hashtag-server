@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
@@ -17,6 +18,9 @@ model User {
   userName      String  @unique
   email         String  @unique
   profilePicUrl String?
+  bio           String?
+  coverPicUrl   String?
+  passwordHash String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -26,6 +30,9 @@ model User {
 
   likes     Like[]
   bookmarks Bookmark[]
+  
+  sentNotification Notification[] @relation("sentNotification")
+  receivedNotification Notification[] @relation("receivedNotification")
 
   posts   Post[]
 }
@@ -84,6 +91,8 @@ model Like {
   post   Post   @relation(fields: [postId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
 
+  createdAt DateTime @default(now())
+
   @@id([postId, userId])
 }
 
@@ -93,5 +102,30 @@ model Bookmark {
   post   Post   @relation(fields: [postId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
 
+  createdAt DateTime @default(now())
+
   @@id([postId, userId])
+}
+
+model Notification {
+  id String @id @default(cuid())
+  
+  sender   User   @relation("sentNotification", fields: [senderId], references: [id])
+  senderId String
+
+  receiver   User   @relation("receivedNotification",fields: [receiverId], references: [id])
+  receiverId String
+
+  type NotificationType
+
+  postId String?
+  commentId String?
+
+  timestamp DateTime @default(now())
+}
+
+enum NotificationType {
+  POST_LIKE
+  POST_COMMENT
+  FOLLOW
 }
