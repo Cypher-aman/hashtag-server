@@ -11,6 +11,11 @@ export const types = `#graphql
         parentId: String
     }
 
+    type getPostsOutput {
+        posts: [Post]
+        nextId: String
+    }
+
     type Like {
         id: ID!
         userId: String!

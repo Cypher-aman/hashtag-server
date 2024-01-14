@@ -111,6 +111,8 @@ class UserService {
       },
     });
 
+    if (from === to) return;
+
     await db.notification.create({
       data: {
         type: NotificationType.FOLLOW,
@@ -334,7 +336,7 @@ class UserService {
     return notifications;
   }
 
-  static async getUserLikedPosts(userId: string) {
+  static async getUserLikedPosts(userId: string, loggedInUserId: string) {
     const likes = await db.like.findMany({
       where: {
         userId,
@@ -360,12 +362,13 @@ class UserService {
     const likedPosts = likes.map((like) => like.post);
     const postWithInfo = likedPosts.map((post) => {
       const isBookmarked = post.bookmarks.some(
-        (bookmark) => bookmark.userId === userId
+        (bookmark) => bookmark.userId === loggedInUserId
       );
+      const isLiked = post.likes.some((like) => like.userId === loggedInUserId);
       return {
         ...post,
         isBookmarked,
-        isLiked: true,
+        isLiked: isLiked,
         likeCount: post.likes.length,
         bookmarkCount: post.bookmarks.length,
       };
@@ -412,7 +415,7 @@ class UserService {
     return postWithInfo || [];
   }
 
-  static async getUserPostsWithMedia(userId: string) {
+  static async getUserPostsWithMedia(userId: string, loggedInUserId: string) {
     const posts = await db.post.findMany({
       where: {
         authorId: userId,
@@ -435,9 +438,9 @@ class UserService {
     });
 
     const postsWithInfo = posts.map((post: Post) => {
-      const isLiked = post.likes.some((like) => like.userId === userId);
+      const isLiked = post.likes.some((like) => like.userId === loggedInUserId);
       const isBookmarked = post.bookmarks.some(
-        (bookmark) => bookmark.userId === userId
+        (bookmark) => bookmark.userId === loggedInUserId
       );
       return {
         ...post,

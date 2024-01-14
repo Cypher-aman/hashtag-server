@@ -4,6 +4,7 @@ import { db } from '../clients/db';
 import { GraphQlContext } from '../utils/interface';
 import { Bookmark, Like, NotificationType } from '@prisma/client';
 import redisClient from '../clients/redis';
+import { POST_PER_PAGE } from '../utils/constant';
 
 const s3CLient = new S3Client({});
 
@@ -30,8 +31,13 @@ interface Post {
 }
 
 class PostService {
-  static async getAllPosts(userId?: string) {
+  static async getAllPosts(userId?: string, cursor: string | undefined = '') {
+    const cursorObj = cursor ? { id: cursor } : undefined;
+
     const posts = await db.post.findMany({
+      take: POST_PER_PAGE,
+      cursor: cursorObj,
+      skip: cursor ? 1 : 0,
       where: {
         parent: null,
       },
@@ -67,7 +73,11 @@ class PostService {
       };
     });
 
-    return postsWithInfo;
+    return {
+      posts: postsWithInfo,
+      nextId:
+        posts.length === POST_PER_PAGE ? posts[posts.length - 1].id : undefined,
+    };
   }
 
   static async getUserPosts(userName: string, userId?: string) {
@@ -140,6 +150,33 @@ class PostService {
     return presignerURL;
   }
 
+  static async getPresignerURLForSignUp(
+    imageType: string,
+    imageName: string,
+    email: string
+  ) {
+    if (!email) throw new Error('Unauthorized');
+    const supportedTypes = [
+      'image/png',
+      'image/jpeg',
+      'image/jpg',
+      'image/webp',
+    ];
+
+    if (!supportedTypes.includes(imageType))
+      throw new Error('Unsupported image type');
+
+    const putObjectCommand = new PutObjectCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      ContentType: imageType,
+      Key: `uploads/users/email/${email}/${Date.now()}-${imageName}`,
+    });
+
+    const presignerURL = await getSignedUrl(s3CLient, putObjectCommand);
+
+    return presignerURL;
+  }
+
   static async createPost(payload: CreatePostInput, ctx: GraphQlContext) {
     const authorId = ctx.userSignature?.id;
 
@@ -203,6 +240,8 @@ class PostService {
           },
         },
       });
+
+      if (userId === post?.author?.id) return 'Liked';
 
       await db.notification.create({
         data: {
@@ -290,6 +329,8 @@ class PostService {
         },
       });
 
+      if (userId === post?.author?.id) return 'Reply created';
+
       await db.notification.create({
         data: {
           type: NotificationType.POST_COMMENT,
@@ -323,6 +364,7 @@ class PostService {
           replies: {
             include: {
               likes: true,
+              bookmarks: true,
               replies: {
                 select: {
                   id: true,
@@ -334,25 +376,36 @@ class PostService {
             },
           },
           likes: true,
+          bookmarks: true,
         },
       });
       if (!post) {
         throw new Error('Post not found');
       }
       const isLiked = post.likes.some((like) => like.userId === userId);
-      const repliesWithLikeInfo = post.replies.map((reply) => {
+      const isBookmarked = post.bookmarks.some(
+        (bookmark) => bookmark.userId === userId
+      );
+      const repliesWithInfo = post.replies.map((reply) => {
         const isLiked = reply.likes.some((like) => like.userId === userId);
+        const isBookmarked = reply.bookmarks.some(
+          (bookmark) => bookmark.userId === userId
+        );
         return {
           ...reply,
           isLiked,
+          isBookmarked,
+          bookmarkCount: reply.bookmarks.length,
           likeCount: reply.likes.length,
         };
       });
       return {
         ...post,
-        replies: repliesWithLikeInfo,
+        replies: repliesWithInfo,
         likeCount: post.likes.length,
         isLiked,
+        isBookmarked,
+        bookmarkCount: post.bookmarks.length,
       };
     } catch (error) {
       throw new Error('Failed to get replies');

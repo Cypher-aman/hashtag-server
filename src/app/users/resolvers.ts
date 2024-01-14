@@ -74,9 +74,15 @@ const query = {
     return await UserService.getAllNotifications(userId);
   },
 
-  getUserLikedPosts: async (parent: any, { userId }: { userId: string }) => {
+  getUserLikedPosts: async (
+    parent: any,
+    { userId }: { userId: string },
+    ctx: GraphQlContext
+  ) => {
     try {
-      return await UserService.getUserLikedPosts(userId);
+      if (!userId) throw new Error('User not found');
+      const loggedInUserId = ctx.userSignature?.id;
+      return await UserService.getUserLikedPosts(userId, loggedInUserId!);
     } catch (error: any) {
       throw new Error(error.message);
     }
@@ -94,10 +100,13 @@ const query = {
 
   getUserPostsWithMedia: async (
     parent: any,
-    { userId }: { userId: string }
+    { userId }: { userId: string },
+    ctx: GraphQlContext
   ) => {
     try {
-      return await UserService.getUserPostsWithMedia(userId);
+      if (!userId) throw new Error('User not found');
+      const loggedInUserId = ctx.userSignature?.id;
+      return await UserService.getUserPostsWithMedia(userId, loggedInUserId!);
     } catch (error: any) {
       throw new Error(error.message);
     }

@@ -20,11 +20,15 @@ interface CreateReplyInput {
 }
 
 const query = {
-  getAllPosts: async (parent: any, args: any, ctx: GraphQlContext) => {
+  getAllPosts: async (
+    parent: any,
+    { cursor }: { cursor: string },
+    ctx: GraphQlContext
+  ) => {
     if (!ctx.userSignature) return [];
 
     const userId = ctx.userSignature?.id;
-    return await PostService.getAllPosts(userId);
+    return await PostService.getAllPosts(userId, cursor);
   },
 
   getUserPosts: async (
@@ -43,6 +47,21 @@ const query = {
     ctx: GraphQlContext
   ) => {
     return await PostService.getPresignerURL(imageType, imageName, ctx);
+  },
+
+  getPresignerURLForSignUp: async (
+    parent: any,
+    {
+      imageType,
+      imageName,
+      email,
+    }: { imageType: string; imageName: string; email: string }
+  ) => {
+    return await PostService.getPresignerURLForSignUp(
+      imageType,
+      imageName,
+      email
+    );
   },
 
   getRepliesToPost: async (
