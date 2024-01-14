@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "node build/index.js",
-    "build": "tsc -p .",
+    "build": "yarn install && tsc -p .",
     "dev": "tsc-watch --onSuccess \" npm start\" "
   },
   "devDependencies": {
