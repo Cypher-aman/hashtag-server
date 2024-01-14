@@ -6,7 +6,13 @@ import { Bookmark, Like, NotificationType } from '@prisma/client';
 import redisClient from '../clients/redis';
 import { POST_PER_PAGE } from '../utils/constant';
 
-const s3CLient = new S3Client({});
+const s3CLient = new S3Client({
+  region: 'ap-south-1',
+  credentials: {
+    accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID as string,
+    secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY as string,
+  },
+});
 
 interface CreatePostInput {
   content: string;
@@ -140,7 +146,7 @@ class PostService {
       throw new Error('Unsupported image type');
 
     const putObjectCommand = new PutObjectCommand({
-      Bucket: process.env.AWS_BUCKET_NAME,
+      Bucket: process.env.MY_AWS_BUCKET_NAME,
       ContentType: imageType,
       Key: `uploads/posts/${ctx.userSignature.id}/${Date.now()}-${imageName}`,
     });

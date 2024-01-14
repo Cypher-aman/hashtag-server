@@ -1,9 +1,8 @@
-import { generateUsername } from 'unique-username-generator';
 import Jwt from 'jsonwebtoken';
 import { User } from '@prisma/client';
 
 export const generateUniqueUserName = () => {
-  const userName = generateUsername('', 3, 20);
+  const userName = Math.random().toString(36).slice(4);
   return userName;
 };
 
