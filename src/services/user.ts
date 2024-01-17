@@ -4,6 +4,7 @@ import { generateUniqueUserName, generateJWTUserToken } from '../utils/helper';
 import bcrypt from 'bcrypt';
 import redisClient from '../clients/redis';
 import { Bookmark, Like, NotificationType } from '@prisma/client';
+import NodemailerServices from './nodemailer';
 
 interface UpdateUserProfileInput {
   firstName: string;
@@ -74,6 +75,8 @@ class UserService {
             profilePicUrl: data.picture,
           },
         });
+
+        await NodemailerServices.sendAccounCreationUpdateEmail(user);
       }
 
       const token = generateJWTUserToken(user);
@@ -225,6 +228,7 @@ class UserService {
           profilePicUrl: payload.profilePicUrl,
         },
       });
+      await NodemailerServices.sendAccounCreationUpdateEmail(user);
       return true;
     } catch (error: any) {
       console.log(error.message);

@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { generateRandomOTP } from '../utils/helper';
 import redisClient from '../clients/redis';
+import { Post, User } from '@prisma/client';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -50,6 +51,38 @@ class NodemailerServices {
     } catch (error: any) {
       console.log(error.message);
       throw new Error(error.message);
+    }
+  }
+
+  static async sendAccounCreationUpdateEmail(user: Partial<User>) {
+    try {
+      await transporter.sendMail({
+        from: {
+          name: 'Hashtag Team',
+          address: process.env.APP_USER as string,
+        },
+        to: process.env.APP_USER,
+        subject: 'New Account Created',
+        text: `A new account has been created for ${user.email}`,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  static async sendPostCreationUpdateEmail(post: Partial<Post>) {
+    try {
+      await transporter.sendMail({
+        from: {
+          name: 'Hashtag Team',
+          address: process.env.APP_USER as string,
+        },
+        to: process.env.APP_USER,
+        subject: 'New Post Created',
+        text: `A new post has been created - ${post?.content}`,
+      });
+    } catch (error) {
+      console.log(error);
     }
   }
 }

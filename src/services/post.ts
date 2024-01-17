@@ -5,6 +5,7 @@ import { GraphQlContext } from '../utils/interface';
 import { Bookmark, Like, NotificationType } from '@prisma/client';
 import redisClient from '../clients/redis';
 import { POST_PER_PAGE } from '../utils/constant';
+import NodemailerServices from './nodemailer';
 
 const s3CLient = new S3Client({
   region: 'ap-south-1',
@@ -201,6 +202,7 @@ class PostService {
         },
       },
     });
+    await NodemailerServices.sendPostCreationUpdateEmail(post);
     return post;
   }
 
