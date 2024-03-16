@@ -10,7 +10,8 @@ import { verifyJWTUserToken } from '../utils/helper';
 const initServer = async () => {
   const app = express();
   app.use(cors());
-  app.use('/health', (req, res) => res.status(200).send('OK'));
+  app.use('/health', (req, res) => res.status(200).send('HEALTHY'));
+  app.use('/', (req, res) => res.status(200).send('OK'));
 
   const server = new ApolloServer<GraphQlContext>({
     typeDefs: `
